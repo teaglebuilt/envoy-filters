@@ -1,0 +1,16 @@
+FROM envoyproxy/envoy-dev:latest
+
+ENV DEBIAN_FRONTEND=noninteractive 
+
+COPY packages/go-envoy-filter/go-envoy-filter.wasm /lib/go-envoy-filter.wasm
+
+RUN apt update && apt install -y net-tools telnet luarocks cmake git
+RUN luarocks install json-lua
+RUN luarocks install inspect
+
+ADD ./envoy/debug.lua ./envoy/debug.lua
+COPY ./envoy/entrypoint.sh /
+RUN chmod 500 /entrypoint.sh
+
+EXPOSE 80 8080
+ENTRYPOINT ["/entrypoint.sh"]
