@@ -1,0 +1,9 @@
+---
+- name: envoy.filters.http.jwt_authn
+  typed_config:
+    "@type": type.googleapis.com/envoy.extensions.filters.http.jwt_authn.v3.JwtAuthentication
+    providers:
+      my_jwt_provider:
+        issuer: "https://example.com/"
+        local_jwks:
+          inline_string: "{ \"keys\": [] }"

@@ -1,4 +1,5 @@
 {
+  "editor.formatOnSave": false,
   "gopls": {
     "ui.semanticTokens": true,
     "ui.completion.usePlaceholders": true,
@@ -8,5 +9,8 @@
   "go.formatTool": "gofmt",
   "go.alternateTools": {
     "go-langserver": "gopls", 
+  },
+  "files.associations": {
+    "*.tpl": "yaml"
   }
 }
