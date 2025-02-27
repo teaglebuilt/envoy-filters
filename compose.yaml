@@ -1,0 +1,11 @@
+services:
+  envoy:
+    build:
+      dockerfile: Dockerfile.envoy
+    ports:
+      - 8080:80
+      - 8008:8008
+    environment:
+      - DEBUG_LEVEL=debug
+      - SERVICE_NAME=domain
+      - SERVICE_PORT=8000

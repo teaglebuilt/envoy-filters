@@ -4,13 +4,23 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 COPY packages/go-envoy-filter/go-envoy-filter.wasm /lib/go-envoy-filter.wasm
 
-RUN apt update && apt install -y net-tools telnet luarocks cmake git
-RUN luarocks install json-lua
-RUN luarocks install inspect
+RUN apt update && apt install -y \
+    net-tools \
+    telnet \
+    luarocks \
+    cmake \
+    git && \
+    luarocks install json-lua && \
+    luarocks install inspect && \
+    apt clean && rm -rf /var/lib/apt/lists/*
 
-ADD ./envoy/debug.lua ./envoy/debug.lua
-COPY ./envoy/entrypoint.sh /
+COPY entrypoint.sh /entrypoint.sh
+COPY utils/debug.lua /utils/debug.lua
+
 RUN chmod 500 /entrypoint.sh
+
+RUN groupadd -r envoy && useradd -r -g envoy envoy
+USER envoy
 
 EXPOSE 80 8080
 ENTRYPOINT ["/entrypoint.sh"]

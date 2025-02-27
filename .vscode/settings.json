@@ -1,0 +1,12 @@
+{
+  "gopls": {
+    "ui.semanticTokens": true,
+    "ui.completion.usePlaceholders": true,
+    "expandWorkspaceToModule": false,
+  },
+  "go.useLanguageServer": true,
+  "go.formatTool": "gofmt",
+  "go.alternateTools": {
+    "go-langserver": "gopls", 
+  }
+}
