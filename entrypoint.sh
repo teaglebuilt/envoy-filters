@@ -1,12 +1,43 @@
 #!/bin/sh
 
-printf "\n\n***** Environment Variables ---> debug level: ${DEBUG_LEVEL}, name: ${SERVICE_NAME}, port: ${SERVICE_PORT} *****\n\n"
-sed -e "s/\${SERVICE_NAME}/${SERVICE_NAME}/" -e "s/\${SERVICE_PORT}/${SERVICE_PORT}/" /config/envoy.yaml > /etc/envoy.yaml
+set -e
 
-printf "\n\n***** Dumping source config file /config/envoy.yaml *****\n\n"
-cat /config/envoy.yaml
+echo "Starting Envoy with the following filters: $ENVOY_FILTERS"
 
-printf "\n\n***** Dumping final config file /etc/envoy.yaml *****\n\n"
-cat /etc/envoy.yaml
+export LISTENER_PORT=${LISTENER_PORT:-8080}
+export UPSTREAM_CLUSTER=${UPSTREAM_CLUSTER:-"backend_service"}
 
-/usr/local/bin/envoy -c /etc/envoy.yaml -l ${DEBUG_LEVEL}
+export WASM_RUNTIME=${WASM_RUNTIME:-"envoy.wasm.runtime.v8"}
+export WASM_FILTER_NAME=${WASM_FILTER_NAME:-"go-envoy-filter"}
+export WASM_FILE=${WASM_FILE:-"go-envoy-filter.wasm"}
+
+echo "Checking available filters in /etc/envoy/filters/"
+ls -l /etc/envoy/filters/
+
+SELECTED_FILTERS=${ENVOY_FILTERS:-"router"}  # Default to built-in router filter
+
+FILTER_CONFIGS=""
+for FILTER in $(echo $SELECTED_FILTERS | tr "," "\n"); do
+  if [ "$FILTER" = "wasm" ]; then
+    WASM_CONFIG=$(cat /etc/envoy/filters/wasm-filter.yaml.tpl | \
+                  sed "s|{{ .WASM_RUNTIME }}|$WASM_RUNTIME|g" | \
+                  sed "s|{{ .WASM_FILTER_NAME }}|$WASM_FILTER_NAME|g" | \
+                  sed "s|{{ .WASM_FILE }}|$WASM_FILE|g")
+    FILTER_CONFIGS="${FILTER_CONFIGS}\n$WASM_CONFIG"
+  else
+    FILTER_FILE="/etc/envoy/filters/${FILTER}.yaml"
+    if [ -f "$FILTER_FILE" ]; then
+      echo "✅ Adding filter: $FILTER"
+      FILTER_CONFIGS="${FILTER_CONFIGS}$(cat $FILTER_FILE)\n"
+    else
+      echo "⚠️ Warning: Filter config not found for $FILTER"
+    fi
+  fi
+done
+
+echo "Generating Envoy configuration..."
+envsubst < /etc/envoy/envoy.yaml.tpl > /etc/envoy/envoy.yaml
+cat /etc/envoy/envoy.yaml
+
+echo "🚀 Starting Envoy..."
+exec envoy -c /etc/envoy/envoy.yaml --log-level debug

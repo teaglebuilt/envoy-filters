@@ -2,8 +2,6 @@ FROM envoyproxy/envoy-dev:latest
 
 ENV DEBIAN_FRONTEND=noninteractive 
 
-COPY packages/go-envoy-filter/go-envoy-filter.wasm /lib/go-envoy-filter.wasm
-
 RUN apt update && apt install -y \
     net-tools \
     telnet \
@@ -14,12 +12,15 @@ RUN apt update && apt install -y \
     luarocks install inspect && \
     apt clean && rm -rf /var/lib/apt/lists/*
 
-COPY entrypoint.sh /entrypoint.sh
+COPY packages/go-envoy-filter/go-envoy-filter.wasm /lib/go-envoy-filter.wasm
+# TODO: create go command to generate config to avoid storing files in container
+COPY filters/ /etc/envoy/filters
 COPY utils/debug.lua /utils/debug.lua
+COPY entrypoint.sh /entrypoint.sh
 
-RUN chmod 500 /entrypoint.sh
+RUN chmod +x /entrypoint.sh && chown envoy:envoy /entrypoint.sh
+RUN chown -R envoy:envoy /etc/envoy/
 
-RUN groupadd -r envoy && useradd -r -g envoy envoy
 USER envoy
 
 EXPOSE 80 8080
